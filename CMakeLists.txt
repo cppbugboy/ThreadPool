@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.15)
+project(threadpool)
+aux_source_directory(. SOURCE)
+add_executable(${PROJECT_NAME} ${SOURCE})
+target_link_libraries(${PROJECT_NAME} pthread)
