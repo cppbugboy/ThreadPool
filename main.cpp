@@ -40,18 +40,30 @@ int main(void)
         return -1;
     }
 
-    for (int i = 0; i < 100; i++)
+//    for (int i = 0; i < 100; i++)
+//    {
+//        threadpool->AddTask(shuchu, 4);
+//    }
+
+    threadpool->StopAllThreads();
+
+
+    try
     {
-        threadpool->AddTask(shuchu, 4);
+        std::future<int> fut = threadpool->AddTask(shuchu, 22);
+        std::future<int> fut2 = threadpool->AddTask([&test](){
+            return test.shuchu(33);
+        });
     }
-
-    std::future<int> fut = threadpool->AddTask(shuchu, 22);
-    std::future<int> fut2 = threadpool->AddTask([&test](){
-        return test.shuchu(33);
-    });
-
-    std::cout << "get: " << fut.get() << std::endl;
-    std::cout << "get: " << fut2.get() << std::endl;
+    catch(std::runtime_error &error)
+    {
+        std::cout << "error: " << error.what() << std::endl;
+        return -1;
+    }
+//
+//
+//    std::cout << "get: " << fut.get() << std::endl;
+//    std::cout << "get: " << fut2.get() << std::endl;
 
     while (threadpool->GetTaskCount() != 0)
     {

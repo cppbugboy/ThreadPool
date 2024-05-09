@@ -74,11 +74,14 @@ public:
      *      任务返回值的future
     */
     template <typename F, typename... Args>
-    auto AddTask(F &&f, Args &&...args) -> std::future<decltype(f(args...))>
+    auto AddTask(F &&f, Args &&...args) -> std::future<typename std::result_of<F(Args...)>::type>
     {
-        using retype = decltype(f(args...));
-        auto task = std::make_shared<std::packaged_task<retype()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
-        std::future<retype> result = task->get_future();
+        if(stop_.load())
+            throw std::runtime_error("threadpool is stoped");
+
+        using return_type = typename std::result_of<F(Args...)>::type;
+        auto task = std::make_shared<std::packaged_task<return_type()>>(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+        std::future<return_type> result = task->get_future();
         {
             std::lock_guard<std::mutex> lock_guard(tasks_mutex_);
             tasks_queue_.emplace([task]()
