@@ -1,17 +1,13 @@
 #include <iostream>
 #include <thread>
-#include <unistd.h>
 #include <set>
 
 #include "threadpool.h"
 
-std::set<std::thread::id> t_id_set;
-
-void shuchu()
+int shuchu(int x)
 {
-    t_id_set.insert(std::this_thread::get_id());
-    usleep(100000);
     std::cout << "thread id : " << std::this_thread::get_id() << std::endl;
+    return x;
 }
 
 class Test
@@ -21,11 +17,9 @@ private:
 public:
     Test(/* args */);
     ~Test();
-    void shuchu()
+    int shuchu(int x)
     {
-        t_id_set.insert(std::this_thread::get_id());
-        usleep(1000);
-        // std::cout << "thread id : " << std::this_thread::get_id() << std::endl;
+        return x;
     }
 };
 
@@ -41,13 +35,29 @@ int main(void)
 {
     Test test;
     ThreadPool *threadpool = new ThreadPool();
-    threadpool->ThreadPoolInit(6, 2, 100);
-    for (int i = 0; i < 100; i++)
+    if (threadpool->ThreadPoolInit(4, 3) != 0)
     {
-        threadpool->AddTask([&test](){test.shuchu();});
+        return -1;
     }
 
-    threadpool->WaitStopAllThreads();
-    std::cout << "t_id_set size : " << std::to_string(t_id_set.size()) << std::endl;
+    for (int i = 0; i < 100; i++)
+    {
+        threadpool->AddTask(shuchu, 4);
+    }
+
+    std::future<int> fut = threadpool->AddTask(shuchu, 22);
+    std::future<int> fut2 = threadpool->AddTask([&test](){
+        return test.shuchu(33);
+    });
+
+    std::cout << "get: " << fut.get() << std::endl;
+    std::cout << "get: " << fut2.get() << std::endl;
+
+    while (threadpool->GetTaskCount() != 0)
+    {
+        continue;
+    }
+
+    threadpool->StopAllThreads();
     return 0;
 }
